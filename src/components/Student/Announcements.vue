@@ -38,11 +38,11 @@
                         <v-col v-for="(announcement, i) in announcements" :key="announcement.id" cols="12" md="4">
                             <v-card>
                                 <v-img
-                                :src="`https://picsum.photos/500/300?image=${i * (i + 2) * 5 + 10}`"
-                                :lazy-src="`https://picsum.photos/10/6?image=${i * (i + 2) * 5 + 10}`"
-                                cover
-                                ></v-img>
-                                <v-card-title>
+                                    :src="`http://localhost:4545/admin/images.php?filename=${announcement.photo}`"
+                                    :lazy-src="`https://picsum.photos/10/6?image=${i * (i + 2) * 5 + 10}`"
+                                    cover
+                                />
+                                <v-card-title class="text-capitalize">
                                     {{ announcement.title }}
                                 </v-card-title>
                                 <v-card-subtitle>
@@ -58,6 +58,6 @@
                 </v-container>
             </v-window-item>
         </v-window>
-  </v-card>
+    </v-card>
 
 </template>

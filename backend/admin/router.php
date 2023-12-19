@@ -40,6 +40,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             echo json_encode(['status' => 'error', 'message' => 'File upload error']);
         }
+    } elseif ($choice === 'add_item') {
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+          $uploadDir = 'images/';
+
+          $fileImg = explode('.',$_FILES['image']['name']);
+          $ext = end($fileImg);
+          $name = time() . '.' . $ext;
+
+          if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $name)) {
+              $item_name = isset($_POST['item_name']) ? $_POST['item_name'] : 'No item name provided';
+              $item_qty = isset($_POST['item_qty']) ? $_POST['item_qty'] : 'No item quantity provided';
+
+              echo $back->addUtilityItem($item_name, $name,$item_qty);
+          } else {
+              echo json_encode(['status' => 'error', 'message' => 'Failed to move uploaded file']);
+          }
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'File upload error']);
+        }
     } else {
         echo "Wrong choice";
     }

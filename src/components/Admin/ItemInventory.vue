@@ -1,4 +1,3 @@
-
 <template>
     <v-card>
         <v-tabs v-model="tab" color="deep-purple-accent-4" align-tabs="center">
@@ -6,36 +5,41 @@
             <v-tab :value="1">Borrowed Items</v-tab>
             <v-tab :value="2">Add new Item</v-tab>
         </v-tabs>
+
         <v-window v-model="tab">
+               <v-window-item >
+                    <v-container fluid>
+                         <div v-if="!isLoading && items.length === 0" style="display: flex; justify-content: center; font-size: 38px; color: gray;">
+                             no items available in the inventory
+                         </div>
+                         <v-row v-else>
+                             <v-col v-for="(item, index) in items" :key="index" cols="12" md="4">
+                                 <DisplayItems :data="item" :index="index" @showEditItem="showEditItem" />
+                             </v-col>
+                         </v-row>
+                     </v-container>
+                 </v-window-item>
+
             <v-window-item >
                 <v-container fluid>
-                  <div v-if="!isLoading && items.length === 0" style="display: flex; justify-content: center; font-size: 48px; color: gray;">
-                    no items available in the inventory
+                  <div v-if="borrowedItems.length === 0" style="display: flex; justify-content: center; font-size: 38px; color: gray; padding: 15px 0px">
+                    no borrowed items available
                   </div>
-                    <v-row>
-                        <v-col v-for="(item, index) in items" :key="index" cols="12" md="4">
-                            <v-card >
-                                <v-img
-                                :src="item.item_img"
-                                :lazy-src="`https://picsum.photos/10/6?image=${index * (index+2) * 5 + 10}`"
-                                cover
-                                ></v-img>
-                                <v-card-title class="text-capitalize">
-                                  {{ item.item_name }}
-                                </v-card-title>
-                                <v-card-text>
-                                  Quantity: {{ item.item_qty }}
-                                    <v-spacer></v-spacer>
-                                    Date added: {{ format(new Date(item.created_at), 'PPPP') }}
-                                    <v-spacer></v-spacer>
-                                    Last update:{{ format(new Date(item.updated_at), 'PPPP') }} 
-                                </v-card-text>
-                                <v-card-actions>
-                                    <v-spacer/>
-                                    <v-btn color="blue" prepend-icon="mdi-square-edit-outline" @click="showEditItem(item, index)">Update</v-btn>
-                                </v-card-actions>
-                            </v-card>
+                    <v-row v-else>
+                        <v-col v-for="(item, index) in borrowedItems" :key="index" cols="12" md="4">
+                            <BorrowedItems :data="item" :index="index" @returnBorrowedItem="returnBorrowedItem"/>
                         </v-col>
+                    </v-row>
+                </v-container>
+            </v-window-item>
+
+            <v-window-item >
+                <v-container fluid>
+                  <div v-if="!isLoading && borrowedItems.length === 0" style="display: flex; justify-content: center; font-size: 38px; color: gray; padding: 15px 0px">
+                    no borrowed items available
+                  </div>
+                    <v-row v-else>
+                        <AddNewItem />
                     </v-row>
                 </v-container>
             </v-window-item>
@@ -56,21 +60,38 @@
         </v-card>
     </v-dialog>
 
-    <v-alert
-      closable
-      :title="alertMsg.title"
-      :text="alertMsg.msg"
-      :type="alertMsg.type"
-      variant="tonal"
-      class="text-capitalize"
-    ></v-alert>
 </template>
 
 <script setup>
-import {ref, onMounted } from 'vue';
+import {ref, onMounted, watch, defineAsyncComponent } from 'vue';
 import { format } from 'date-fns';
 import $ from 'jquery';
+import { useToastr } from '../../plugins/toastr';
+import { useAnnouncementStore } from '../../stores/announcement.js';
 
+const announceStore = useAnnouncementStore();
+const DisplayItems = defineAsyncComponent({
+    loader: () => import('./Inventory/DisplayItems.vue'),
+    delay: 300,
+    timeout: 2300,
+    suspensile: false,
+});
+
+const BorrowedItems = defineAsyncComponent({
+    loader: () => import('./Inventory/BorrowedItems.vue'),
+    delay: 300,
+    timeout: 2300,
+    suspensile: false,
+});
+
+const AddNewItem = defineAsyncComponent({
+    loader: () => import('./Inventory/AddNewItem.vue'),
+    delay: 300,
+    timeout: 2300,
+    suspensile: false,
+});
+
+const toastr = useToastr();
 const tab = ref(0);
 const announcements = ref(null);
 const editItemDialog = ref(false);
@@ -78,16 +99,12 @@ const deleteItemDialog = ref(false);
 const api = 'http://localhost:4545/admin/router.php';
 const isLoading = ref(false);
 const items = ref([]);
+const borrowedItems = ref([]);
 const updateItemForm = ref({
   item_name: '',
   item_qty: null,
   item_id: null,
 });
-const alertMsg = ref({
-  title: '',
-  msg: '',
-  type: null,
-})
 
 const getInventoryItems = async () => {
   try {
@@ -100,13 +117,15 @@ const getInventoryItems = async () => {
         choice: 'get',
         item_id: 0
       },
-      success: response => {
-        items.value = JSON.parse(response);
+     success: response => {
+        const res = JSON.parse(response);
+            if (res.status !== '403' || res.status === '501') {
+                items.value = res;
+            }
+
       },
       error: error => {
-        alertMsg.title = 'Error';
-        alertMsg.type = 'error';
-        alertMsg.msg = 'Something went wrong';
+        toastr["error"](error.responseText)
         throw error;
       }
     });
@@ -116,6 +135,35 @@ const getInventoryItems = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const getBorrowedItems = () => {
+    try {
+        isLoading.value = true;
+        $.ajax({
+            type: 'POST',
+            url: api,
+            data: {
+                choice: 'my_item',
+                user_id: 0,
+            },
+            success: response => {
+                const res = JSON.parse(response)
+                if (res.status !== '403' || res.status === '501') {
+                    borrowedItems.value = res;
+                }
+            },
+            error: error => {
+                toastr["error"](error.responseText)
+                throw error;
+            }
+        })
+    } catch (error) {
+        errMsg.value = error.responseText;
+        throw error;
+    } finally {
+        isLoading.value = false
+    }
 }
 
 const showEditItem = (item, index) => {
@@ -149,27 +197,18 @@ const updateItemQuantity = () => {
         const temps = items.value.find(item => item.item_id === updateItemForm.value.item_id);
         temps.item_qty = parseInt(temps.item_qty) + parseInt(updateItemForm.value.item_qty);
         temps.updated_at = Date.now();
-        
 
-        alertMsg.title = 'Updated';
-        alertMsg.type = 'success';
-        alertMsg.msg = tmp.message;
-
+        toastr["success"](tmp.message.toUpperCase());
         editItemDialog.value = false;
         updateItemForm.value.item_qty = null;
       },
       error: error => {
-        alertMsg.title = 'Error';
-        alertMsg.type = 'error';
-        alertMsg.msg = error.responseText;
+        toastr["error"](error.responseText);
         throw error;
       }
     })
   } catch (error) {
-    alertMsg.title = 'Error';
-    alertMsg.type = 'error';
-    alertMsg.msg = error.responstText;
-
+    toastr["error"](error.responseText);
     throw error;
   } finally {
     isLoading.value = false;
@@ -177,7 +216,39 @@ const updateItemQuantity = () => {
   }
 }
 
+const returnBorrowedItem = (borrowed_id) => {
+    try {
+        isLoading.value = true;
+        $.ajax({
+            type: 'POST',
+            url: api,
+            data: {
+                choice: 'return',
+                borrow_id: borrowed_id
+            },
+            success: async response => {
+                const res = JSON.parse(response);
+                toastr["success"](res.message.toUpperCase());
+                const temps = borrowedItems.value.find(item => item.borrowed_id === borrowed_id);
+                temps.date_updated = Date.now();
+                await getBorrowedItems();
+            }
+        })
+    } catch (error) {
+        toastr["error"](error.responseText);
+        throw error;
+    } finally {
+        isLoading.value = false;
+        editItemDialog.value = false;
+    }
+}
+
 onMounted(async () => {
+  await getInventoryItems();
+  await getBorrowedItems();
+})
+
+watch(() => announceStore.childState, async () => {
   await getInventoryItems();
 })
 </script>

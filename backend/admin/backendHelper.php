@@ -13,7 +13,7 @@ class backendHelper {
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($res) {
           $db->closeConn();
-          return json_encode($re);
+          return json_encode(['status' => '201', 'message' => 'Item has been successfully added to the inventory']);
         } else {
           $db->closeConn();
           return json_encode(['status' => '403']);
@@ -22,7 +22,7 @@ class backendHelper {
         return json_encode(['status' => '403']);
       }
     } catch (PDOException $th) {
-      return json_encode(['status' => '501']);
+      return json_encode(['status' => '501', 'message' => $th->getMessage()]);
     }
   }
 
@@ -79,7 +79,7 @@ class backendHelper {
         $res = $stmt->fetch();
         if ($res) {
           $db->closeConn();
-          return json_encode(['status' => '201', 'message' => 'borrowing success']);
+          return json_encode(['status' => '201', 'message' => 'Successful borrowing this item']);
         } else {
           $db->closeConn();
           return json_encode(['status' => '403']);
@@ -123,7 +123,7 @@ class backendHelper {
       if ($db->getStatus()) {
         $stmt = $db->getConn()->prepare($query->getMyItemBorrowedQuery());
         $stmt->execute(array($user_id));
-        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if ($res) {
           $db->closeConn();
           return json_encode($res);

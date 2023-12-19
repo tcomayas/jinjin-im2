@@ -20,7 +20,12 @@
             <v-spacer></v-spacer>
             <div v-if="auth">
         <!-- <img :src="Logo" class="picture" /> -->
-
+                <router-link to="/resources">
+                    <v-btn color="white">
+                      Resources
+                    </v-btn>
+                </router-link>
+                
                 <router-link to="/">
                     <v-btn color="white">
                         Announcements

@@ -1,12 +1,9 @@
 import { createRouter, createWebHistory } from "vue-router";
 import {ref} from 'vue'
-import Signin from '../components/Signin.vue'
-import Signup from '../components/Signup.vue'
-import Account from '../components/Student/Account.vue'
+
 import StudentLayout from '../components/Layouts/StudentLayout.vue'
 import GuestLayout from '../components/Layouts/GuestLayout.vue'
 import AdminLayout from '../components/Layouts/AdminLayout.vue'
-import AdminDashboard from '../components/Admin/AdminDashboard.vue'
 
 const user = ref(null)
 function isLoggedIn() {
@@ -34,25 +31,31 @@ const router = createRouter({
             path: '/sign-in',
             name: 'Signin',
             meta: {layout: GuestLayout},
-            component: Signin
+            component: () => import('../components/Signin.vue'),
         },
         {
             path: '/sign-up',
             name: 'Signup',
             meta: {layout: GuestLayout},
-            component: Signup,
+            component: () => import('../components/Signup.vue'),
         },
         {
             path: '/account',
             name: 'Account',
             meta: { layout: StudentLayout, requiresAuth: true },
-            component: Account
+            component: () => import('../components/Student/Account.vue')
+        },
+        {
+            path: '/resources',
+            name: 'Resources',
+            meta: { layout: StudentLayout, requiresAuth: true },
+            component: () => import('../components/Student/Resources.vue')
         },
         {
             path: '/admin/dashboard',
             name: 'AdminDashboard',
             meta: {layout: AdminLayout, requiresAuth: true},
-            component: AdminDashboard
+            component: () => import('../components/Admin/AdminDashboard.vue'),
         },
         {
           path: '/admin/inventory',
