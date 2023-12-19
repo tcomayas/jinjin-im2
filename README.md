@@ -4,7 +4,7 @@
 You can run this wherever on your pc or laptop
 
 ### Integration and running
-If your have php 8.2.* on your computer
+If your have php 8.* on your computer
 ### Start php server http://locahost:4545
 
 ```bash
