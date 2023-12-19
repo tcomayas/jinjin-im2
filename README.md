@@ -1,7 +1,7 @@
 # Account Management System
 
 ## Description for branch build
-You can run this whenere in your pc or laptop
+You can run this wherever on your pc or laptop
 
 ### Integration and running
 If your have php 8.2.* on your computer
