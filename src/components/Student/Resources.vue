@@ -158,6 +158,7 @@ const borrowThisItem = () => {
                 const res = JSON.parse(response);
                 if (res.status === '201') {
                     toastr['success'](res.message);
+                    resources.value = [];
                     await getUtilities();
                 } else {
                     toastr['error'](res.message);
