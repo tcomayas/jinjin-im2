@@ -159,7 +159,9 @@ const borrowThisItem = () => {
                 if (res.status === '201') {
                     toastr['success'](res.message);
                     resources.value = [];
+                    borrowedItems.value = [];
                     await getUtilities();
+                    await getBorrowedItems();
                 } else {
                     toastr['error'](res.message);
                 }
